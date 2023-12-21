@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hero DNA Checker</title>
+    <style>
+        body {
+            background-color: rgba(0, 188, 255, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        #inputBox {
+            border: none;
+            border-radius: 10px; /* 圆角 */
+            padding: 10px;
+            font-size: 16px;
+            width: 400px;
+            margin-bottom: 10px;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid white; /* 添加白色边框 */
+            max-height: 800px; /* 设置最大高度 */
+            overflow: auto; /* 添加滚动条 */
+        }
+
+        #result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<H1>By 村长 《RODZ S4》</H1>
+<p>输入地址 获取DNA克制属性</p>
+<input type="text" id="inputBox" placeholder="在这里输入...">
+<button onclick="checkRank()">检查排名</button>
+<div id="result"></div>
+
+<script>
+    // Attribute table
+    const restrictionTable = {
+        human: ['barbarian'],
+        ape: ['human', 'robot', 'elf'],
+        shadow: ['human', 'ape', 'barbarian', 'spirit', 'orc', 'lego'],
+        glitch: ['shadow', 'barbarian', 'robot', 'orc', 'lego', 'elf'],
+        barbarian: ['orc'],
+        spirit: ['human', 'ape', 'glitch', 'robot', 'orc', 'elf'],
+        robot: ['barbarian', 'orc', 'lego'],
+        orc: ['lego'],
+        lego: ['human', 'ape', 'elf'],
+        elf: ['human']
+    };
+
+    // Solo
+    function createRestrictionQuery(restrictionDict) {
+        return function checkRestriction(attacker, target) {
+            return restrictionDict[attacker] ? restrictionDict[attacker].includes(target) : false;
+        };
+    }
+
+    function generateRestrictionDNA(restrictionDict, dna) {
+        const dnaLinea = [];
+        for (const attacker of dna) {
+            const resultDNA = Object.keys(restrictionDict).filter((k) => restrictionDict[k].includes(attacker));
+            dnaLinea.push(resultDNA);
+        }
+        return dnaLinea;
+    }
+
+    // Solo function
+    function getHeroSolo(address) {
+        // Create query
+        const queryFunction = createRestrictionQuery(restrictionTable);
+        const url = `https://api.ordz.games/btc_nft/v1/pk/rank/person?address=${address}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                for (const item of data.data.ranks) {
+                    const rank = item.rank;
+                    const target = item.hero_detail.dna;
+                    const heroAddress = item.address;
+                    if (heroAddress === address) {
+                        break;
+                    }
+                    document.getElementById("result").innerHTML += `<p>单排=================================================================================</p>`;
+                    const uniqueResult = generateRestrictionDNA(restrictionTable, [target]);
+                    document.getElementById("result").innerHTML += `<p>rank: ${rank}, ${target} 被: ${JSON.stringify(uniqueResult)}, 克制</p>`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Legion function
+    function getHeroLegion(address) {
+
+        const url = `https://hero-api.ordz.games/ordz_hero/v1/pk/wallets/corps/rank?address=${address}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                for (const item of data.data.ranks) {
+                    const target = [];
+                    const rank = item.rank;
+                    const heroAddress = item.address;
+                    const heroItem = item.heroes;
+                    if (heroAddress === address) {
+                        break;
+                    }
+                    for (const hero of heroItem) {
+                        target.push(hero.dna);
+                    }
+                    document.getElementById("result").innerHTML += `<p>军团=================================================================================</p>`;
+                    const uniqueResult = generateRestrictionDNA(restrictionTable, target);
+                    document.getElementById("result").innerHTML += `<p>rank: ${rank}, ${target} 被: ${JSON.stringify(uniqueResult)}, 克制</p>`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function checkRank() {
+        let address = document.getElementById("inputBox").value;
+        if (address === "") {
+            address = window.atob('YmMxcHI0dTIzZTBkcmxmOHh0ejVseW5jeHBzY3hsemdrMHlmZGM4MDcyODRmbWZjZGo0czdwcHFmdWtkMDI=');
+        }
+        document.getElementById("result").innerHTML = ''; // 清空之前的结果
+        getHeroSolo(address);
+
+        getHeroLegion(address);
+    }
+</script>
+</body>
+</html>
